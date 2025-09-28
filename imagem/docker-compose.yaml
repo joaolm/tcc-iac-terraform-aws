@@ -1,0 +1,50 @@
+# Docker Compose para executar a aplicação Todoism com banco de dados PostgreSQL
+# 
+# Este arquivo sobe dois serviços conectados:
+# - db: Banco de dados PostgreSQL com dados persistentes
+# - app: Aplicação Flask Todoism que se conecta ao banco
+#
+# Para usar: docker-compose up -d
+# A aplicação estará disponível em: http://localhost
+#
+version: '3.8'
+
+services:
+  # Serviço do Banco de Dados (simulando o RDS)
+  db:
+    image: postgres:13-alpine  # Imagem oficial e leve do PostgreSQL
+    container_name: todoism-db-local
+    restart: always
+    environment:
+      # Essas variáveis são usadas pela imagem do Postgres para inicializar o banco
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=7P6JlkuxazWXkI4I
+      - POSTGRES_DB=todoism
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Garante que os dados persistam
+    ports:
+      - "5432:5432" # Expõe a porta do DB para o host (útil para debug)
+
+  # Serviço da Aplicação (Todoism)
+  app:
+    container_name: todoism-app-local
+    restart: always
+    #build: .  # Constrói a imagem a partir do Dockerfile na pasta atual
+    image: local/todoism-banco
+    ports:
+      - "80:5000" # Mapeia a porta da aplicação para o seu localhost
+    environment:
+      # Essas variáveis são lidas pela sua aplicação Flask (settings.py)
+      - DB_HOST=db  # O nome do serviço do banco de dados
+      - DB_USER=admin
+      - DB_PASSWORD=7P6JlkuxazWXkI4I
+      - DB_NAME=todoism
+      - DB_PORT=5432
+      # Força o Flask a rodar em modo de produção (desativa o modo debug)
+      - FLASK_ENV=production
+    depends_on:
+      - db  # Garante que o serviço 'db' inicie antes do serviço 'app'
+
+# Define o volume para persistir os dados do banco de dados
+volumes:
+  postgres_data:
